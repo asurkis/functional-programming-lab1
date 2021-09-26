@@ -50,10 +50,36 @@ module Problem9 =
             |> Seq.filter (fun (_, _, c) -> c >= 0)
             |> Seq.tryFind (fun (a, b, c) -> a * a + b * b = c * c)
 
+    module LoopSolution =
+        let findTriplet n =
+            let mutable result = None
+
+            for a = 1 to n do
+                for b = 1 to n do
+                    let c = n - a - b
+
+                    if result.IsNone && c >= 0 && a * a + b * b = c * c then
+                        result <- Some(a, b, c)
+
+            result
+
+    module InfiniteSeqSolution =
+        let infiniteSequence =
+            seq {
+                for b in Seq.initInfinite id do
+                    for a = 1 to b do
+                        yield a, b
+            }
+
+        let findTriplet n =
+            infiniteSequence
+            |> Seq.map (fun (a, b) -> (a, b, n - a - b))
+            |> Seq.filter (fun (_, _, c) -> c >= 0)
+            |> Seq.filter (fun (a, b, c) -> a * a + b * b = c * c)
+            |> Seq.tryHead
+
     let solve triplet =
-        match triplet with
-        | Some (a, b, c) -> Some(a * b * c)
-        | None -> None
+        Option.map (fun (a, b, c) -> a * b * c) triplet
 
 module Problem22 =
     let names () =
@@ -89,14 +115,40 @@ module Problem22 =
 
         let solve names = iterate 1 (Seq.toList names)
 
-    module MapSolution =
-        let scoreOfName pos name =
-            name |> Seq.sumBy characterPos |> (*) pos
-
+    module ReduceSolution =
         let solve names =
             names
             |> Seq.zip (Seq.initInfinite id)
-            |> Seq.sumBy (fun (i, name) -> scoreOfName (i + 1) name)
+            |> Seq.sumBy (fun (i, name) -> (i + 1) * (Seq.sumBy characterPos name))
+
+    module MapSolution =
+        let solve names =
+            names
+            |> Seq.zip (Seq.initInfinite id)
+            |> Seq.map
+                (fun (i, name) ->
+                    (i + 1)
+                    * (name |> Seq.map characterPos |> Seq.sum))
+            |> Seq.sum
+
+    module LoopSolution =
+        let nameScore name =
+            let mutable sum = 0
+
+            for c in name do
+                sum <- sum + characterPos c
+
+            sum
+
+        let solve names =
+            let mutable i = 0
+            let mutable result = 0
+
+            for name in names do
+                i <- i + 1
+                result <- result + i * nameScore name
+
+            result
 
 [<EntryPoint>]
 let main _ =
