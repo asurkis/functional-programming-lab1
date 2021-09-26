@@ -9,6 +9,10 @@ module Problem9 =
         else
             None
 
+    let sequence n =
+        let oneToN = seq { 1 .. n }
+        Seq.allPairs oneToN oneToN
+
     module TailRecursiveSolution =
         let rec iterate curr stop f =
             if curr > stop then
@@ -22,25 +26,12 @@ module Problem9 =
             iterate 1 n (fun a -> iterate a (n - a) <| optionalAnswer n a)
 
     module ReduceSolution =
-        let sequence n =
-            seq {
-                for a = 1 to n do
-                    for b = 1 to n do
-                        yield (a, b)
-            }
-
         let findTriplet n =
             sequence n
             |> Seq.filter (fun (a, b) -> a + b <= n)
             |> Seq.tryPick (fun (a, b) -> optionalAnswer n a b)
 
     module MapSolution =
-        let sequence n =
-            seq {
-                for a = 1 to n do
-                    yield! (seq { 1 .. n } |> Seq.map (fun b -> a, b))
-            }
-
         let findTriplet n =
             sequence n
             |> Seq.map (fun (a, b) -> (a, b, n - a - b))
@@ -52,21 +43,41 @@ module Problem9 =
         | Some (a, b, c) -> Some(a * b * c)
         | None -> None
 
+module Problem22 =
+    let names () =
+        System.IO.File.ReadAllText("names.txt").Split ','
+        |> Seq.map (fun s -> s.Trim('"').ToUpper())
+        |> Seq.sort
+
+    let characterPos (c: char) = int c - int 'A' + 1
+
+    module MapSolution =
+        let scoreOfName pos name =
+            name |> Seq.sumBy characterPos |> (*) pos
+
+        let solve names =
+            names
+            |> Seq.zip (Seq.initInfinite id)
+            |> Seq.sumBy (fun (i, name) -> scoreOfName (i + 1) name)
+
 [<EntryPoint>]
 let main _ =
     printfn "Special Pythagorean Triplet"
     let limit = 1000
 
-    Problem9.TailRecursiveSolution.findTriplet limit
-    |> Problem9.solve
-    |> printfn "Tail recursive solution: %A"
+    // Problem9.TailRecursiveSolution.findTriplet limit
+    // |> Problem9.solve
+    // |> printfn "Tail recursive solution: %A"
 
-    Problem9.ReduceSolution.findTriplet limit
-    |> Problem9.solve
-    |> printfn "Reduce         solution: %A"
+    // Problem9.ReduceSolution.findTriplet limit
+    // |> Problem9.solve
+    // |> printfn "Reduce solution: %A"
 
-    Problem9.MapSolution.findTriplet limit
-    |> Problem9.solve
-    |> printfn "Map-reduce     solution: %A"
+    // Problem9.MapSolution.findTriplet limit
+    // |> Problem9.solve
+    // |> printfn "Map solution: %A"
 
+    printfn "\nNames scores"
+    let names = Problem22.names ()
+    printfn "Map solution: %A" (Problem22.MapSolution.solve names)
     0
