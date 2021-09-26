@@ -14,7 +14,7 @@ module Problem9 =
         Seq.allPairs oneToN oneToN
 
     let resolveTriplet triplet =
-        Option.map (fun (a, b, c) -> a * b * c) triplet
+        Option.map (fun (a, b, c) -> a, b, c, a * b * c) triplet
 
     module TailRecursive =
         let rec iterate curr stop f =
@@ -59,27 +59,24 @@ module Problem9 =
 
     module Loop =
         let solve n =
-            let mutable result = None
+            seq {
+                for a = 1 to n do
+                    for b = 1 to n do
+                        let c = n - a - b
 
-            for a = 1 to n do
-                for b = 1 to n do
-                    let c = n - a - b
-
-                    if result.IsNone && c >= 0 && a * a + b * b = c * c then
-                        result <- Some(a, b, c)
-
-            resolveTriplet result
+                        if c >= 0 && a * a + b * b = c * c then
+                            yield a, b, c
+            }
+            |> Seq.tryHead
+            |> resolveTriplet
 
     module InfiniteSeq =
-        let infiniteSequence =
+        let solve n =
             seq {
                 for b in Seq.initInfinite id do
                     for a = 1 to b do
                         yield a, b
             }
-
-        let solve n =
-            infiniteSequence
             |> Seq.map (fun (a, b) -> (a, b, n - a - b))
             |> Seq.filter (fun (_, _, c) -> c >= 0)
             |> Seq.filter (fun (a, b, c) -> a * a + b * b = c * c)
