@@ -51,6 +51,19 @@ module Problem22 =
 
     let characterPos (c: char) = int c - int 'A' + 1
 
+    module TailRecursiveSolution =
+        let rec nameScore name =
+            match Seq.tryHead name with
+            | None -> 0
+            | Some c -> characterPos c + nameScore (Seq.tail name)
+
+        let rec iterate pos (names: list<string>) =
+            match names with
+            | [] -> 0
+            | head :: tail -> pos * (nameScore head) + iterate (pos + 1) tail
+
+        let solve names = iterate 1 (Seq.toList names)
+
     module MapSolution =
         let scoreOfName pos name =
             name |> Seq.sumBy characterPos |> (*) pos
@@ -79,5 +92,6 @@ let main _ =
 
     printfn "\nNames scores"
     let names = Problem22.names ()
+    printfn "Tail recursive solution: %A" (Problem22.TailRecursiveSolution.solve names)
     printfn "Map solution: %A" (Problem22.MapSolution.solve names)
     0
