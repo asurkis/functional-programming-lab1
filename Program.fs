@@ -30,16 +30,16 @@ module Problem9 =
             |> resolveTriplet
 
     module Recursive =
-        let rec iterate curr stop f =
-            if curr <= stop then
-                match f curr with
-                | None -> iterate (curr + 1) stop f
-                | Some result -> Some result
-            else
+        let rec iterate curr f =
+            if curr = 0 then
                 None
+            else
+                match iterate (curr - 1) f with
+                | Some result -> Some result
+                | None -> f curr
 
         let solve n =
-            iterate 1 n (fun a -> iterate a (n - a) <| optionalAnswer n a)
+            iterate n (fun b -> iterate b (fun a -> optionalAnswer n a b))
             |> resolveTriplet
 
     module Reduce =
@@ -98,28 +98,28 @@ module Problem22 =
     let characterPos (c: char) = int c - int 'A' + 1
 
     module TailRecursive =
-        let rec nameScore name =
+        let rec nameScore acc name =
             match Seq.tryHead name with
-            | None -> 0
-            | Some c -> characterPos c + nameScore (Seq.tail name)
+            | None -> acc
+            | Some c -> nameScore (acc + characterPos c) (Seq.tail name)
 
-        let rec iterate pos (names: list<string>) =
+        let rec iterate acc pos (names: list<string>) =
             match names with
-            | [] -> 0
-            | head :: tail -> pos * (nameScore head) + iterate (pos + 1) tail
+            | [] -> acc
+            | head :: tail -> iterate (acc + pos * (nameScore 0 head)) (pos + 1) tail
 
-        let solve names = iterate 1 (Seq.toList names)
+        let solve names = iterate 0 1 (Seq.toList names)
 
     module Recursive =
         let rec nameScore name =
             match Seq.tryHead name with
-            | Some c -> characterPos c + nameScore (Seq.tail name)
             | None -> 0
+            | Some c -> characterPos c + nameScore (Seq.tail name)
 
         let rec iterate pos (names: list<string>) =
             match names with
-            | head :: tail -> pos * (nameScore head) + iterate (pos + 1) tail
             | [] -> 0
+            | head :: tail -> pos * (nameScore head) + iterate (pos + 1) tail
 
         let solve names = iterate 1 (Seq.toList names)
 
