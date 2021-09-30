@@ -17,30 +17,38 @@ module Problem9 =
         Option.map (fun (a, b, c) -> a, b, c, a * b * c) triplet
 
     module TailRecursive =
-        let rec iterate curr stop f =
-            if curr > stop then
+        let rec iterateA n b a =
+            if a > b then
                 None
             else
-                match f curr with
-                | Some result -> Some result
-                | None -> iterate (curr + 1) stop f
+                optionalAnswer n a b
+                |> Option.orElseWith (fun () -> iterateA n b (a + 1))
 
-        let solve n =
-            iterate 1 n (fun a -> iterate a (n - a) <| optionalAnswer n a)
-            |> resolveTriplet
+        let rec iterateB n b =
+            if b > n then
+                None
+            else
+                iterateA n b 1
+                |> Option.orElseWith (fun () -> iterateB n (b + 1))
+
+        let solve n = iterateB n 1 |> resolveTriplet
 
     module Recursive =
-        let rec iterate curr f =
-            if curr = 0 then
+        let rec iterateA n b a =
+            if a <= 0 then
                 None
             else
-                match iterate (curr - 1) f with
-                | Some result -> Some result
-                | None -> f curr
+                iterateA n b (a - 1)
+                |> Option.orElse (optionalAnswer n a b)
 
-        let solve n =
-            iterate n (fun b -> iterate b (fun a -> optionalAnswer n a b))
-            |> resolveTriplet
+        let rec iterateB n b =
+            if b <= 0 then
+                None
+            else
+                iterateB n (b - 1)
+                |> Option.orElseWith (fun () -> iterateA n b b)
+
+        let solve n = iterateB n n |> resolveTriplet
 
     module Reduce =
         let solve n =
@@ -72,11 +80,9 @@ module Problem9 =
 
     module InfiniteSeq =
         let solve n =
-            seq {
-                for b in Seq.initInfinite id do
-                    for a = 1 to b do
-                        yield a, b
-            }
+            fun i -> Seq.map (fun j -> j + 1, i + 1) { 0 .. i }
+            |> Seq.initInfinite
+            |> Seq.concat
             |> Seq.map (fun (a, b) -> (a, b, n - a - b))
             |> Seq.filter (fun (_, _, c) -> c >= 0)
             |> Seq.filter (fun (a, b, c) -> a * a + b * b = c * c)
@@ -99,45 +105,46 @@ module Problem22 =
 
     module TailRecursive =
         let rec nameScore acc name =
-            match Seq.tryHead name with
-            | None -> acc
-            | Some c -> nameScore (acc + characterPos c) (Seq.tail name)
+            match name with
+            | [] -> acc
+            | head :: tail -> nameScore (acc + characterPos head) tail
 
-        let rec iterate acc pos (names: list<string>) =
+        let rec iterate acc pos names =
             match names with
             | [] -> acc
-            | head :: tail -> iterate (acc + pos * (nameScore 0 head)) (pos + 1) tail
+            | head :: tail -> iterate (acc + pos * (nameScore 0 (Seq.toList head))) (pos + 1) tail
 
-        let solve names = iterate 0 1 (Seq.toList names)
+        let solve names = iterate 0 1 names
 
     module Recursive =
         let rec nameScore name =
-            match Seq.tryHead name with
-            | None -> 0
-            | Some c -> characterPos c + nameScore (Seq.tail name)
+            match name with
+            | [] -> 0
+            | head :: tail -> characterPos head + nameScore tail
 
-        let rec iterate pos (names: list<string>) =
+        let rec iterate pos names =
             match names with
             | [] -> 0
-            | head :: tail -> pos * (nameScore head) + iterate (pos + 1) tail
+            | head :: tail ->
+                pos * ((Seq.toList >> nameScore) head)
+                + iterate (pos + 1) tail
 
-        let solve names = iterate 1 (Seq.toList names)
+        let solve names = iterate 1 names
 
     module Reduce =
         let solve names =
             names
-            |> Seq.zip (Seq.initInfinite id)
-            |> Seq.sumBy (fun (i, name) -> (i + 1) * (Seq.sumBy characterPos name))
+            |> List.zip [ 1 .. names.Length ]
+            |> List.sumBy (fun (pos, name) -> pos * (Seq.sumBy characterPos name))
 
     module Map =
         let solve names =
             names
-            |> Seq.zip (Seq.initInfinite id)
-            |> Seq.map
-                (fun (i, name) ->
+            |> List.mapi
+                (fun i name ->
                     (i + 1)
                     * (name |> Seq.map characterPos |> Seq.sum))
-            |> Seq.sum
+            |> List.sum
 
     module Loop =
         let nameScore name =
@@ -158,19 +165,33 @@ module Problem22 =
 
             result
 
+    module InfiniteSeq =
+        let nameScore name = Seq.sumBy characterPos name
+
+        let solve names =
+            let arr = Seq.toArray names
+
+            Seq.initInfinite (fun i -> i + 1, arr.[i])
+            |> Seq.map (fun (i, name) -> i * nameScore name)
+            |> Seq.scan (+) 0
+            |> Seq.skip arr.Length
+            |> Seq.head
+
     let printSolution () =
         printfn "Problem 22: Names scores"
 
         let names =
             System.IO.File.ReadAllText("names.txt").Split ','
-            |> Seq.map (fun s -> s.Trim('"').ToUpper())
-            |> Seq.sort
+            |> Array.map (fun s -> s.Trim('"').ToUpper())
+            |> Array.sort
+            |> Array.toList
 
-        printfn "Tail recursive solution: %A" (TailRecursive.solve names)
-        printfn "Recursive      solution: %A" (Recursive.solve names)
-        printfn "Reduce         solution: %A" (Reduce.solve names)
-        printfn "Map            solution: %A" (Map.solve names)
-        printfn "Loop           solution: %A" (Loop.solve names)
+        printfn "Tail recursive    solution: %A" (TailRecursive.solve names)
+        printfn "Recursive         solution: %A" (Recursive.solve names)
+        printfn "Reduce            solution: %A" (Reduce.solve names)
+        printfn "Map               solution: %A" (Map.solve names)
+        printfn "Loop              solution: %A" (Loop.solve names)
+        printfn "Infinite sequence solution: %A" (InfiniteSeq.solve names)
         printfn ""
 
 
