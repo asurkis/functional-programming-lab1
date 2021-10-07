@@ -1,11 +1,9 @@
 module Problem9 =
-    let isAnswer n a b =
-        let c = n - a - b
-        a * a + b * b = c * c
-
     let optionalAnswer n a b =
-        if isAnswer n a b then
-            Some(a, b, n - a - b)
+        let c = n - a - b
+
+        if a * a + b * b = c * c then
+            Some(a, b, c)
         else
             None
 
@@ -135,7 +133,7 @@ module Problem22 =
         let solve names =
             names
             |> List.zip [ 1 .. names.Length ]
-            |> List.sumBy (fun (pos, name) -> pos * (Seq.sumBy characterPos name))
+            |> List.sumBy (fun (pos, name) -> pos * Seq.sumBy characterPos name)
 
     module Map =
         let solve names =
